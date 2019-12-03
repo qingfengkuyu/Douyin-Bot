@@ -21,13 +21,14 @@ except Exception as ex:
 
 VERSION = "0.0.1"
 
-# 我申请的 Key，随便用，嘻嘻嘻
+# 腾讯AI开放平台
 # 申请地址 http://ai.qq.com
-AppID = '1106858595'
-AppKey = 'bNUNgOpY6AeeJjFu'
+AppID = '2124120784'
+AppKey = 'LSmfa0PU8EA407aC'
 
 DEBUG_SWITCH = True
 FACE_PATH = 'face/'
+SCREENSHOT_PATH = 'screenshot/'
 
 adb = auto_adb()
 adb.test_device()
@@ -117,7 +118,7 @@ def tap(x, y):
 
 def auto_reply():
 
-    msg = "垆边人似月，皓腕凝霜雪。就在刚刚，我的心动了一下，小姐姐你好可爱呀_Powered_By_Python"
+    msg = "垆边人似月，皓腕凝霜雪。就在刚刚，我的心动了一下，小姐姐你好可爱呀"
 
     # 点击右侧评论按钮
     tap(config['comment_bottom']['x'], config['comment_bottom']['y'])
@@ -125,6 +126,15 @@ def auto_reply():
     #弹出评论列表后点击输入评论框
     tap(config['comment_text']['x'], config['comment_text']['y'])
     time.sleep(1)
+    
+    #Check your available virtual keyboards
+    print(adb.run("shell ime list -a"))
+    
+    #replace keyboard
+    cmd = 'shell ime set com.android.adbkeyboard/.AdbIME'
+    result = adb.run(cmd)
+    print('切换Adb输入法{}'.format(result))
+    time.sleep(0)
     #输入上面msg内容 ，注意要使用ADB keyboard  否则不能自动输入，参考： https://www.jianshu.com/p/2267adf15595
     cmd = 'shell am broadcast -a ADB_INPUT_TEXT --es msg {text}'.format(text=msg)
     adb.run(cmd)
@@ -155,7 +165,7 @@ def main():
     print('激活窗口并按 CONTROL + C 组合键退出')
     debug.dump_device_info()
     screenshot.check_screenshot()
-
+    
     cmd_args = parser()
 
     while True:
@@ -177,6 +187,7 @@ def main():
 
         if rsp['ret'] == 0:
             beauty = 0
+            screenshot_path = ''
             for face in rsp['data']['face_list']:
 
                 msg_log = '[INFO] gender: {gender} age: {age} expression: {expression} beauty: {beauty}'.format(
@@ -190,6 +201,7 @@ def main():
                 img = Image.open("optimized.png")
                 cropped_img = img.crop(face_area).convert('RGB')
                 cropped_img.save(FACE_PATH + face['face_id'] + '.png')
+                screenshot_path = SCREENSHOT_PATH + face['face_id'] + '.png'
                 # 性别判断
                 if face['beauty'] > beauty and face['gender'] < 50:
                     beauty = face['beauty']
@@ -202,6 +214,8 @@ def main():
             # 是个美人儿~关注点赞走一波
             if beauty > BEAUTY_THRESHOLD and major_total > minor_total:
                 print('发现漂亮妹子！！！')
+                with Image.open('autojump.png') as image_file:
+                    image_file.save(screenshot_path)
                 thumbs_up()
                 follow_user()
 
